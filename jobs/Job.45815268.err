@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/hh3043/ML_contest/permutate.py", line 87, in <module>
-    main(permute)
-  File "/home/hh3043/ML_contest/permutate.py", line 69, in main
-    total_train = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/dataset/train_img", train_data_idx, transform, None, True)
-  File "/home/hh3043/ML_contest/permutate.py", line 23, in __init__
-    self.target_transform = target_transform
-NameError: name 'target_transform' is not defined
