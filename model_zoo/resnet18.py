@@ -45,7 +45,7 @@ def downsample(input_channel, output_channel):
 
 class resnet18(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(resnet18, self).__init__()
         self.conv1 = start(3, 64)
         self.pool_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.res1_1 = res(64)
