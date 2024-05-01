@@ -1,4 +1,11 @@
 from data_util import test_CustomImageDataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
+import torchvision.transforms as transforms
+from pathlib import Path
+from PIL import Image
+import torch
+import os
+import pandas as pd
 
 class test_CustomImageDataset(Dataset):
     def __init__(self, img_dir, transform=None):
@@ -23,6 +30,8 @@ transform = transforms.Compose(
     ])
 
 def prediction(net, transform):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    net = net.to(device)
     net.eval()
     test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/dataset/test_img", transform=transform)
     test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=3)

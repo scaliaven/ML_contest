@@ -5,7 +5,9 @@ from torch.utils.data import Dataset
 from PIL import Image
 from tqdm import tqdm
 from torchvision.io.image import read_file
-from torchvision.transforms.functional import to_pil_image
+from pathlib import Path
+from torch.utils.data import Dataset
+
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, mask = None, balance = False):
@@ -14,7 +16,7 @@ class CustomImageDataset(Dataset):
             lines = content.strip("\n").split('\n')        
         self.img_labels_init = []
 
-        idex_list = extract_index_from_filenames(img_dir)
+        idex_list = self.extract_index_from_filenames(img_dir)
 
         for index in idex_list:
             self.img_labels_init.append(lines[index])
@@ -40,14 +42,14 @@ class CustomImageDataset(Dataset):
             self.img_labels.append(label)
             self.image.append(image)
 
-    def extract_index_from_filenames(directory):
-    index_list = []
-    for filename in os.listdir(directory):
-        if os.path.isfile(os.path.join(directory, filename)):
-            name, extension = os.path.splitext(filename)
-            if name.isdigit():
-                index_list.append(int(name))
-    return index_list
+    def extract_index_from_filenames(self, directory):
+        index_list = []
+        for filename in os.listdir(directory):
+            if os.path.isfile(os.path.join(directory, filename)):
+                name, extension = os.path.splitext(filename)
+                if name.isdigit():
+                    index_list.append(int(name))
+        return index_list
 
 
     def __len__(self):
@@ -57,3 +59,20 @@ class CustomImageDataset(Dataset):
         label = int(self.img_labels[idx])
         image = self.image[idx]
         return image, label
+
+
+
+class test_CustomImageDataset(Dataset):
+    def __init__(self, img_dir, transform=None):
+        self.img_dir = img_dir
+        self.transform = transform
+
+    def __len__(self):
+        return sum(1 for file in Path(self.img_dir).iterdir() if file.suffix == '.png')
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, f"{idx}.png")
+        image = Image.open(img_path).convert('RGB')
+        if self.transform:
+            image = self.transform(image)
+        return image
