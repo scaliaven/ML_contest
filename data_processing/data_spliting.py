@@ -13,14 +13,14 @@ def split_folder_randomly(source_folder, dest_folder1, dest_folder2, split_ratio
     files_dest1 = files[:num_files_dest1]
     files_dest2 = files[num_files_dest1:]
     for file in files_dest1:
-        shutil.copy(os.path.join(source_folder, file), dest_folder1)
+        shutil.move(os.path.join(source_folder, file), dest_folder1)
     for file in files_dest2:
-        shutil.copy(os.path.join(source_folder, file), dest_folder2)
+        shutil.move(os.path.join(source_folder, file), dest_folder2)
 
 
-source_folder = "/scratch/hh3043/ML_contest/dataset/trai_img"
-dest_folder1 = "/scratch/hh3043/ML_contest/dataset/train_img"
-dest_folder2 = "/scratch/hh3043/ML_contest/dataset/val_img"
+source_folder = "/scratch/hh3043/ML_contest/dataset/trai_gray_img"
+dest_folder1 = "/scratch/hh3043/ML_contest/dataset/train_gray_img"
+dest_folder2 = "/scratch/hh3043/ML_contest/dataset/val_gray_img"
 split_ratio = 0.8
 
 split_folder_randomly(source_folder, dest_folder1, dest_folder2, split_ratio)

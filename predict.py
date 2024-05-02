@@ -7,20 +7,6 @@ import torch
 import os
 import pandas as pd
 
-class test_CustomImageDataset(Dataset):
-    def __init__(self, img_dir, transform=None):
-        self.img_dir = img_dir
-        self.transform = transform
-
-    def __len__(self):
-        return sum(1 for file in Path(self.img_dir).iterdir() if file.suffix == '.png')
-
-    def __getitem__(self, idx):
-        img_path = os.path.join(self.img_dir, f"{idx}.png")
-        image = Image.open(img_path).convert('RGB')
-        if self.transform:
-            image = self.transform(image)
-        return image
 
 transform = transforms.Compose(
     [
@@ -33,7 +19,7 @@ def prediction(net, transform):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net = net.to(device)
     net.eval()
-    test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/dataset/test_img", transform=transform)
+    test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/dataset/test_gray_img", transform=transform)
     test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=3)
     predicted_labels = []
 

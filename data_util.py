@@ -7,6 +7,7 @@ from tqdm import tqdm
 from torchvision.io.image import read_file
 from pathlib import Path
 from torch.utils.data import Dataset
+import torch
 
 
 class CustomImageDataset(Dataset):
@@ -28,8 +29,8 @@ class CustomImageDataset(Dataset):
         self.img_labels = []
         for idx in tqdm(range(len(self.idex_list))):
             label = self.img_labels_init[idx]
-            img_path = os.path.join(self.img_dir, f"{self.idex_list[idx]}.png")
-            image = Image.open(img_path).convert("RGB")
+            img_path = os.path.join(self.img_dir, f"{self.idex_list[idx]}.pt")
+            image = torch.load(img_path)[ :, :, 1:129]
             if self.transform:
                 image = self.transform(image)
             if self.mask:
@@ -68,11 +69,12 @@ class test_CustomImageDataset(Dataset):
         self.transform = transform
 
     def __len__(self):
-        return sum(1 for file in Path(self.img_dir).iterdir() if file.suffix == '.png')
+        return sum(1 for file in Path(self.img_dir).iterdir() if file.suffix == '.pt')
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_dir, f"{idx}.png")
-        image = Image.open(img_path).convert('RGB')
+        img_path = os.path.join(self.img_dir, f"{idx}.pt")
+        # image = Image.open(img_path).convert('RGB')
+        image = torch.load(img_path)[ :, :, 1:129]
         if self.transform:
             image = self.transform(image)
         return image
