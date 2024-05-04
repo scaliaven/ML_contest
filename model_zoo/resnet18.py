@@ -62,8 +62,9 @@ class resnet18(nn.Module):
         self.sample_3 = downsample(256, 512)
         self.drop = nn.Dropout()
         
-        self.averagepool = nn.AdaptiveAvgPool2d(output_size = (1, 1))   #fghjkl
+        self.averagepool = nn.AdaptiveAvgPool2d(output_size = (1, 1))
         self.fc1 = nn.Linear(512, 4)   ###how many labels are needed in this task?
+        # self.fc = nn.Linear(512 * 16 * 16, 512)
         
         
     def forward(self, x):
@@ -84,7 +85,9 @@ class resnet18(nn.Module):
         x = F.relu(self.conv4(x) + self.sample_3(x))
         x = F.relu(self.res4_1(x) + x)
 
+        # x = x.reshape((-1, 512*16*16))
         x = self.averagepool(x)
+        # x = self.fc(x)
         x = x.reshape((-1, 512))
         x = self.fc1(x)
         return x
