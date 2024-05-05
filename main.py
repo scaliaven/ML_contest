@@ -21,12 +21,12 @@ print(device)
 
 ######## set up ##########
 save = False
-patience = 40
+patience = 400
 predict = False
 continue_train = False
-epochs = 30
-name = "attention_next_92"
-PATH = "/scratch/hh3043/ML_contest/checkpoint_attention_next_92.pth"
+epochs = 300
+name = "densenet"
+PATH = "/scratch/hh3043/ML_contest/checkpoint_densenet_10warm.pth"
 
 
 max_len = 128  # size of vocabulary
@@ -54,6 +54,29 @@ transform_1 = transforms.Compose(
     # transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) 
     ])
+
+
+import numpy as np 
+def mixup_data(x, y, alpha=1.0, use_cuda=True):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
 def save_checkpoint(model, optimizer, PATH):
@@ -99,7 +122,7 @@ if name == "resnet":
     model.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 
 elif name == "resnext50":
-    model = torchvision.models.resnext101_32x8d(weights = None, num_classes = 4)
+    model = torchvision.models.resnext50_32x4d(weights = None, num_classes = 4)
     model.conv1 = nn.Conv2d(1, model.conv1.weight.shape[0], 3, 1, 1, bias = False)
     model.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 
@@ -159,7 +182,7 @@ else:
     max_lr = 5e-3
     optimizer = optim.SGD(model.parameters(), lr = max_lr, weight_decay = 1.0e-3, momentum = 0.9) 
     grad_clip = 0.1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = epochs*len(trainloader))
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = epochs*len(trainloader)//10)
     # sched = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr, epochs=epochs, steps_per_epoch=len(trainloader))
     # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [epochs // 3, epochs * 2 // 3], gamma = 0.1, last_epoch = -1)
 
@@ -179,12 +202,12 @@ else:
 
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
-            #inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, 0.2)
+            inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, 0.2)
 
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = criterion(outputs, labels) 
-            # loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+            # loss = criterion(outputs, labels) 
+            loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
             loss.backward()
             nn.utils.clip_grad_value_(model.parameters(), grad_clip)
             optimizer.step()
