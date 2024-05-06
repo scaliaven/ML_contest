@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 def mp3_to_image(indir, outdir, length):
     for i in tqdm(range(length)):
-        y, sr = librosa.load(f'{indir}/{i}.mp3')
+        y, sr = librosa.load(f'{indir}/{i}.wav')
         melspec = librosa.feature.melspectrogram(y = y, sr=sr)
         melspec = librosa.power_to_db(melspec, ref = np.max)
         size = melspec.shape
@@ -18,5 +18,5 @@ def mp3_to_image(indir, outdir, length):
         image_path = f'{outdir}/{i}.pt'
         torch.save(melspec, image_path)
 
-mp3_to_image("/scratch/hh3043/ML_contest/dataset/train_mp3s", "/scratch/hh3043/ML_contest/dataset/trai_gray_img", 11886)
-mp3_to_image("/scratch/hh3043/ML_contest/dataset/test_mp3s", "/scratch/hh3043/ML_contest/dataset/test_gray_img", 2447)
+mp3_to_image("/scratch/hh3043/ML_contest/separate/train_mp3s", "/scratch/hh3043/ML_contest/separate/trai_img", 11886)
+mp3_to_image("/scratch/hh3043/ML_contest/separate/test_mp3s", "/scratch/hh3043/ML_contest/separate/test_img", 2447)

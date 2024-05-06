@@ -18,9 +18,9 @@ def split_folder_randomly(source_folder, dest_folder1, dest_folder2, split_ratio
         shutil.move(os.path.join(source_folder, file), dest_folder2)
 
 
-source_folder = "/scratch/hh3043/ML_contest/dataset/trai_gray_img"
-dest_folder1 = "/scratch/hh3043/ML_contest/dataset/train_gray_img"
-dest_folder2 = "/scratch/hh3043/ML_contest/dataset/val_gray_img"
+source_folder = "/scratch/hh3043/ML_contest/separate/trai_img"
+dest_folder1 = "/scratch/hh3043/ML_contest/separate/train_img"
+dest_folder2 = "/scratch/hh3043/ML_contest/separate/val_img"
 split_ratio = 0.8
 
 split_folder_randomly(source_folder, dest_folder1, dest_folder2, split_ratio)

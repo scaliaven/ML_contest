@@ -13,6 +13,20 @@ import torch.optim as optim
 from predict import prediction
 import torch.nn as nn
 from tqdm import tqdm
+import torchaudio
+import random
+import numpy as np
+
+def set_random_seeds(seed_value=42):
+    random.seed(seed_value)         
+    np.random.seed(seed_value)     
+    torch.manual_seed(seed_value)
+    torch.cuda.manual_seed(seed_value)
+    torch.backends.cudnn.deterministic = True
+
+set_random_seeds(seed_value=42)
+
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -24,10 +38,11 @@ save = False
 patience = 400
 predict = False
 continue_train = False
-epochs = 300
-name = "densenet"
-PATH = "/scratch/hh3043/ML_contest/checkpoint_densenet_10warm.pth"
-
+epochs = 40
+name = "resnext50"
+PATH = "/scratch/hh3043/ML_contest/checkpoint_next_aug_test_1.pth"
+best_accu_val = 0
+#########################
 
 max_len = 128  # size of vocabulary
 d_model = 128  # embedding dimension
@@ -35,7 +50,6 @@ d_hid = 64  # dimension of the feedforward network model in ``nn.TransformerEnco
 num_layers = 2  # number of ``nn.TransformerEncoderLayer`` in ``nn.TransformerEncoder``
 nhead = 2  # number of heads in ``nn.MultiheadAttention``
 dropout = 0.2
-
 dim_feedforward = 512
 lstm_hidden_size = 128
 lstm_n_layers = 2
@@ -117,9 +131,9 @@ def collate_fn(batch):
 
 
 if name == "resnet":
-    model = torchvision.models.resnet101()#resnet18.resnet18()
-    model.conv1 = nn.Conv2d(1, model.conv1.weight.shape[0], 3, 1, 1, bias = False)
-    model.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
+    model = resnet18.resnet18()
+    # model.conv1 = nn.Conv2d(1, model.conv1.weight.shape[0], 3, 1, 1, bias = False)
+    # model.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 
 elif name == "resnext50":
     model = torchvision.models.resnext50_32x4d(weights = None, num_classes = 4)
@@ -158,19 +172,19 @@ if predict:
 else:
     
     if save:
-        train_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/dataset/train_gray_img", transform = transform, mask = None, balance = True)
+        train_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/separate/train_img", transform = transform, mask = None, balance = True)
         # train_data_1 = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/dataset/train_img", transform = transform_1, mask = None, balance = True)
-        val_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/dataset/val_gray_img", transform = transform, mask = None, balance = False)
-        torch.save(train_data,'/scratch/hh3043/ML_contest/dataset/train_64_gray.pt')
-        torch.save(val_data,'/scratch/hh3043/ML_contest/dataset/val_64_gray.pt')
+        val_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/separate/val_img", transform = transform, mask = None, balance = False)
+        torch.save(train_data,'/scratch/hh3043/ML_contest/separate/train_64_gray.pt')
+        torch.save(val_data,'/scratch/hh3043/ML_contest/separate/val_64_gray.pt')
         # torch.save(train_data_1,'/scratch/hh3043/ML_contest/dataset/train_64_hflip.pt')
         trainloader = DataLoader(train_data, batch_size=16, shuffle=True, num_workers=3)
         valloader = DataLoader(val_data, batch_size=16, shuffle=False, num_workers=3)
 
     else:
-        train_data = torch.load('/scratch/hh3043/ML_contest/dataset/train_64_gray.pt')
+        train_data = torch.load('/scratch/hh3043/ML_contest/separate/train_64_gray.pt')
         # train_data_1 = torch.load('/scratch/hh3043/ML_contest/dataset/train_64_hflip.pt')
-        val_data = torch.load('/scratch/hh3043/ML_contest/dataset/val_64_gray.pt')
+        val_data = torch.load('/scratch/hh3043/ML_contest/separate/val_64_gray.pt')
         trainloader = DataLoader(train_data, batch_size=16, collate_fn=collate_fn, shuffle=True, num_workers=3)
         valloader = DataLoader(val_data, batch_size=16, collate_fn=collate_fn, shuffle=False, num_workers=3)
 
@@ -182,7 +196,7 @@ else:
     max_lr = 5e-3
     optimizer = optim.SGD(model.parameters(), lr = max_lr, weight_decay = 1.0e-3, momentum = 0.9) 
     grad_clip = 0.1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = epochs*len(trainloader)//10)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = epochs*len(trainloader))
     # sched = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr, epochs=epochs, steps_per_epoch=len(trainloader))
     # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = [epochs // 3, epochs * 2 // 3], gamma = 0.1, last_epoch = -1)
 
@@ -191,7 +205,6 @@ else:
 
     best_val = 100
     cnt = 0
-    best_accu_val = 0
 
     for epoch in range(epochs):
         model.train()
@@ -201,6 +214,14 @@ else:
         for i, data in enumerate(tqdm(list(trainloader))):
 
             inputs, labels = data
+            t_mask_1 = torchaudio.transforms.TimeMasking(time_mask_param=6, iid_masks = True)
+            freq_mask_1 = torchaudio.transforms.FrequencyMasking(freq_mask_param=6, iid_masks = True)
+            t_mask_2 = torchaudio.transforms.TimeMasking(time_mask_param=6, iid_masks = True)
+            freq_mask_2 = torchaudio.transforms.FrequencyMasking(freq_mask_param=6, iid_masks = True)
+            inputs = t_mask_1(inputs)
+            inputs = freq_mask_1(inputs)
+            inputs = t_mask_2(inputs)
+            inputs = freq_mask_2(inputs)
             inputs, labels = inputs.to(device), labels.to(device)
             inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, 0.2)
 

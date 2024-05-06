@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def mp3_to_image(indir, outdir, length):
     for i in tqdm(range(length)):
-        y, sr = librosa.load(f'{indir}/{i}.mp3')
+        y, sr = librosa.load(f'{indir}/{i}.wav')
         fig, ax = plt.subplots(figsize = (10, 10), dpi = 100)
         melspec = librosa.feature.melspectrogram(y = y, sr=sr)
         melspec = librosa.power_to_db(melspec, ref = np.max)
@@ -18,5 +18,5 @@ def mp3_to_image(indir, outdir, length):
         plt.savefig(image_path, transparent = True)
         plt.close(fig)
 
-mp3_to_image("/scratch/hh3043/ML_contest/dataset/train_mp3s", "/scratch/hh3043/ML_contest/dataset/train_img", 11886)
-mp3_to_image("/scratch/hh3043/ML_contest/dataset/test_mp3s", "/scratch/hh3043/ML_contest/dataset/test_img", 2447)
+mp3_to_image("/scratch/hh3043/ML_contest/separate/train_mp3s", "/scratch/hh3043/ML_contest/separate/train_img", 11886)
+mp3_to_image("/scratch/hh3043/ML_contest/separate/test_mp3s", "/scratch/hh3043/ML_contest/separate/test_img", 2447)

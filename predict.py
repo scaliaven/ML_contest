@@ -19,7 +19,7 @@ def prediction(net, transform):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net = net.to(device)
     net.eval()
-    test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/dataset/test_gray_img", transform=transform)
+    test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/separate/test_img", transform=transform)
     test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=3)
     predicted_labels = []
 
