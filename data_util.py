@@ -90,7 +90,7 @@ class metaDataset(Dataset):
         return self._x.shape[0]
 
     def __getitem__(self, index):
-        x = self._x[index, :, :, :]
+        x = self._x[index]
         y = self._y[index]
         return x, y
 
@@ -98,7 +98,7 @@ class metaDataset(Dataset):
 
 
 class test_metaDataset(Dataset):
-    def __init__(self, x, y):
+    def __init__(self, x):
         super(test_metaDataset, self).__init__()
         self._x = x
 
@@ -106,5 +106,5 @@ class test_metaDataset(Dataset):
         return self._x.shape[0]
 
     def __getitem__(self, index):
-        x = self._x[index, :, :, :]
+        x = self._x[index]
         return x

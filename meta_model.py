@@ -31,10 +31,11 @@ print(device)
 
 ######## set up ##########
 save = False
+meta_save = False
 patience = 400
 predict = False
 continue_train = False
-epochs = 40
+epochs = 10
 PATH = "/scratch/hh3043/ML_contest/checkpoint_mata.pth"
 best_accu_val = 0
 #########################
@@ -82,6 +83,7 @@ def predicting(net, test_loader):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net = net.to(device)
     net.eval()
+    predicted_labels = []
     with torch.no_grad():
         for data in test_loader:
             images = data
@@ -103,9 +105,11 @@ class meta(nn.Module):
     def __init__(self):
         super(meta, self).__init__()
         self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(4, 1), stride = 1, padding = 0)
+        self.bn = nn.BatchNorm2d(1) 
     def forward(self, x):
         conv_out = self.conv(x)
-        # output = conv_out.view(conv_out.size(0), -1)
+        conv_out = self.bn(conv_out)
+        output = conv_out.view(conv_out.size(0), -1)
         return output
 
 
@@ -124,7 +128,7 @@ resNext50.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 resNext50.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_next_aug_split.pth")['state_dict'])
 
 
-Densenet_201 = torchvision.models.densenet201()
+Densenet_201 = torchvision.models.densenet201(weights = None, num_classes = 4)
 Densenet_201.features[0] = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
 Densenet_201.features[3] = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 Densenet_201.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_dense_aug_split.pth")['state_dict'])
@@ -144,12 +148,13 @@ else:
     val_data = torch.load('/scratch/hh3043/ML_contest/separate/val_64_gray.pt')
     trainloader = DataLoader(train_data, batch_size=16, collate_fn=collate_fn, shuffle=False, num_workers=3)
     valloader = DataLoader(val_data, batch_size=16, collate_fn=collate_fn, shuffle=False, num_workers=3)
+    pre_valloader = valloader
 
 ### create corresponding output (train, val, test): store in 3 pt files (dataloaders)
 def converting_test(model_list, path):
     test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/separate/test_img", transform=transform)
     test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=3)
-    totaldata = torch.zeros((1, 1, 3, 4)).to(device)
+    totaldata = torch.zeros((1, 1, 4, 4))
     for data in tqdm(test_loader):
         outputs = []
         images = data
@@ -160,14 +165,15 @@ def converting_test(model_list, path):
             with torch.no_grad():
                 output = model(images).unsqueeze(1).unsqueeze(1)
                 outputs.append(output)
-        outputs = torch.cat(outputs, dim = 2)
+        outputs = torch.cat(outputs, dim = 2).cpu()
         totaldata = torch.cat((totaldata, outputs), dim=0)
+    print(totaldata.shape)
     dataset = test_metaDataset(totaldata[1:])
     torch.save(dataset, path)
 
 def converting(loader, model_list, path):
     totallabel = []
-    totaldata = torch.torch.zeros((1, 1, 3, 4)).to(device)
+    totaldata = torch.torch.zeros((1, 1, 4, 4))
     for data in tqdm(loader):
         outputs = []
         images, labels = data
@@ -178,15 +184,15 @@ def converting(loader, model_list, path):
             with torch.no_grad():
                 output = model(images).unsqueeze(1).unsqueeze(1)
                 outputs.append(output)
-        outputs = torch.cat(outputs, dim = 2)
+        outputs = torch.cat(outputs, dim = 2).cpu()
         totaldata = torch.cat((totaldata, outputs), dim=0)
         totallabel += labels
-    dataset = metaDataset(totaldata[1:], labels[1:])
+    dataset = metaDataset(totaldata[1:], totallabel)
     torch.save(dataset, path)
-
-converting(trainloader, model_list, "/scratch/hh3043/ML_contest/separate/train_meta.pt")
-converting(valloader, model_list, "/scratch/hh3043/ML_contest/separate/val_meta.pt")
-converting_test(model_list, "/scratch/hh3043/ML_contest/separate/test_meta.pt")
+if meta_save:
+    converting(trainloader, model_list, "/scratch/hh3043/ML_contest/separate/train_meta.pt")
+    converting(valloader, model_list, "/scratch/hh3043/ML_contest/separate/val_meta.pt")
+    converting_test(model_list, "/scratch/hh3043/ML_contest/separate/test_meta.pt")
 
 ### load the outputs
 train_data = torch.load('/scratch/hh3043/ML_contest/separate/train_meta.pt')
@@ -195,12 +201,38 @@ test_data =  torch.load("/scratch/hh3043/ML_contest/separate/test_meta.pt")
 
 trainloader = DataLoader(train_data, batch_size=16, collate_fn=collate_fn, shuffle=True, num_workers=3)
 valloader = DataLoader(val_data, batch_size=16, collate_fn=collate_fn, shuffle=False, num_workers=3)
-test_loader = DataLoader(test_data, batch_size=16, collate_fn=collate_fn, shuffle=False, num_workers=3)
 
+
+def collate_fn_test(batch):
+    print(batch.size)
+    image = torch.stack([x for x in batch])
+    print(image.shape)
+    return Image
+
+
+test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=1)
+
+for data in tqdm(pre_valloader):
+    correct = 0
+    total = 0
+    outputs = torch.zeros((data[0].shape[0], 4)).to(device)
+    for model in model_list:
+        model = model.to(device)
+        model.eval()
+        with torch.no_grad():
+            images, labels = data
+            images, labels = images.to(device), labels.to(device)
+            output = model(images)
+            outputs += output
+    _, predicted = torch.max(outputs.data, 1)
+
+    total += labels.size(0)
+    correct += predicted.eq(labels).sum().item()
+    accu=100.*correct/total
+print("Validation Accuracy without reweights: %.3f "%(accu))
 
 
 model = meta()
-
 if predict:
 
     model.load_state_dict(torch.load(PATH)['state_dict'])
@@ -215,7 +247,7 @@ else:
     model.to(device)
 
     criterion = nn.CrossEntropyLoss().to(device)
-    max_lr = 5e-3
+    max_lr = 5e-4
     optimizer = optim.SGD(model.parameters(), lr = max_lr, weight_decay = 1.0e-3, momentum = 0.9) 
     grad_clip = 0.1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = epochs*len(trainloader))
@@ -229,12 +261,12 @@ else:
         correct=0
         total=0
         for i, data in enumerate(tqdm(list(trainloader))):
-
             inputs, labels = data
-            labels = labels.to(device)
+            inputs, labels = inputs.to(device), labels.to(device)
             
             optimizer.zero_grad()
             outputs = model(inputs)
+            loss = criterion(outputs, labels) 
             loss.backward()
             nn.utils.clip_grad_value_(model.parameters(), grad_clip)
             optimizer.step()
@@ -261,9 +293,8 @@ else:
     my_lr = scheduler.get_last_lr()[0]
     print('Finished Training', "last_learning_rate", my_lr)
 
-    model.load_state_dict(torch.load(PATH)['state_dict'])
-    model = model.to(device)
 
 ### use the meta model on the final prediction
-    predicting(model, testloader)
+    model.load_state_dict(torch.load(PATH)['state_dict'])
+    predicting(model, test_loader)
     print("Finish saving")
