@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset
 from PIL import Image
-from tqdm import tqdm
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -39,8 +38,8 @@ patience = 400
 predict = False
 continue_train = False
 epochs = 40
-name = "resnext50"
-PATH = "/scratch/hh3043/ML_contest/checkpoint_next_aug_test_1.pth"
+name = "resnet"
+PATH = "/scratch/hh3043/ML_contest/checkpoint_resnet18_aug_test_1.pth"
 best_accu_val = 0
 #########################
 
@@ -59,14 +58,6 @@ lstm_n_layers = 2
 transform = transforms.Compose(
     [
     transforms.Normalize((0.5, ), (0.5, )) 
-    ])
-
-transform_1 = transforms.Compose(
-    [
-    # transforms.Resize((128, 128)),
-    # transforms.RandomHorizontalFlip(1),
-    # transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) 
     ])
 
 
@@ -153,7 +144,7 @@ elif name == "attention_resnet":
     model = Transformer.attention_resnet18()
 
 elif name == "densenet":
-    model = torchvision.models.densenet201()
+    model = torchvision.models.densenet201(weights = None, num_classes = 4)
     model.features[0] = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
     model.features[3] = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 
@@ -223,12 +214,16 @@ else:
             inputs = t_mask_2(inputs)
             inputs = freq_mask_2(inputs)
             inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, 0.2)
+            if epoch <= epochs//2:
+                inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, 0.2)
 
             optimizer.zero_grad()
             outputs = model(inputs)
             # loss = criterion(outputs, labels) 
-            loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+            if epoch <= epochs//2:
+                loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+            else:
+                loss = criterion(outputs, labels) 
             loss.backward()
             nn.utils.clip_grad_value_(model.parameters(), grad_clip)
             optimizer.step()
@@ -254,7 +249,7 @@ else:
             cnt += 1
             if cnt >= patience:
                 break
-        
+    save_checkpoint(model, optimizer, "/scratch/hh3043/ML_contest/checkpoint_net18_test_max_1.pth")
     my_lr = scheduler.get_last_lr()[0]
     print('Finished Training', "last_learning_rate", my_lr)
 

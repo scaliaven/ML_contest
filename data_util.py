@@ -78,3 +78,33 @@ class test_CustomImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         return image
+
+
+class metaDataset(Dataset):
+    def __init__(self, x, y):
+        super(metaDataset, self).__init__()
+        self._x = x
+        self._y = y
+
+    def __len__(self):
+        return self._x.shape[0]
+
+    def __getitem__(self, index):
+        x = self._x[index, :, :, :]
+        y = self._y[index]
+        return x, y
+
+
+
+
+class test_metaDataset(Dataset):
+    def __init__(self, x, y):
+        super(test_metaDataset, self).__init__()
+        self._x = x
+
+    def __len__(self):
+        return self._x.shape[0]
+
+    def __getitem__(self, index):
+        x = self._x[index, :, :, :]
+        return x
