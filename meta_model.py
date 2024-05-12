@@ -35,7 +35,7 @@ meta_save = False
 patience = 400
 predict = False
 continue_train = False
-epochs = 10
+epochs = 20
 PATH = "/scratch/hh3043/ML_contest/checkpoint_mata.pth"
 best_accu_val = 0
 #########################
@@ -113,14 +113,7 @@ class meta(nn.Module):
         return output
 
 
-### load 4 models: atten_92, resNext50, resnet15, Densenet 201
-
-resnet = resnet18.resnet18()
-resnet.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_res_aug_split.pth")['state_dict'])
-
-
-atten_92 = residual_attention_network.ResidualAttentionModel_92_32input_update()
-atten_92.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_atten_aug_split.pth")['state_dict'])
+### load models: resNext50, Densenet 201
 
 resNext50 = torchvision.models.resnext50_32x4d(weights = None, num_classes = 4)
 resNext50.conv1 = nn.Conv2d(1, resNext50.conv1.weight.shape[0], 3, 1, 1, bias = False)
@@ -134,7 +127,7 @@ Densenet_201.features[3] = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0
 Densenet_201.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_dense_aug_split.pth")['state_dict'])
 
 
-model_list = [resnet, atten_92, resNext50, Densenet_201]
+model_list = [resNext50, Densenet_201]
 if save:
     train_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/separate/train_img", transform = transform, mask = None, balance = True)
     val_data = CustomImageDataset("/scratch/hh3043/ML_contest/dataset/train_label.txt", "/scratch/hh3043/ML_contest/separate/val_img", transform = transform, mask = None, balance = False)

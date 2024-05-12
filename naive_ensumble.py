@@ -20,12 +20,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(torch.version.cuda)
 print(device)
 
-resnet = resnet18.resnet18()
-resnet.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_res_aug_split.pth")['state_dict'])
-
-
-atten_92 = residual_attention_network.ResidualAttentionModel_92_32input_update()
-atten_92.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_atten_aug_split.pth")['state_dict'])
 
 resNext50 = torchvision.models.resnext50_32x4d(weights = None, num_classes = 4)
 resNext50.conv1 = nn.Conv2d(1, resNext50.conv1.weight.shape[0], 3, 1, 1, bias = False)
@@ -39,7 +33,7 @@ Densenet_201.features[3] = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0
 Densenet_201.load_state_dict(torch.load("/scratch/hh3043/ML_contest/checkpoint_dense_aug_split.pth")['state_dict'])
 
 
-model_list = [resnet, atten_92, resNext50, Densenet_201]
+model_list = [resNext50, Densenet_201]
 
 test_data = test_CustomImageDataset("/scratch/hh3043/ML_contest/separate/test_img", transform=transform)
 test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=3)

@@ -37,21 +37,10 @@ save = False
 patience = 400
 predict = False
 continue_train = False
-epochs = 40
-name = "resnet"
-PATH = "/scratch/hh3043/ML_contest/checkpoint_resnet18_aug_test_1.pth"
+epochs = 20
+name = "resnext101"
+PATH = "/scratch/hh3043/ML_contest/checkpoint_resnext101_aug_test_1.pth"
 best_accu_val = 0
-#########################
-
-max_len = 128  # size of vocabulary
-d_model = 128  # embedding dimension
-d_hid = 64  # dimension of the feedforward network model in ``nn.TransformerEncoder``
-num_layers = 2  # number of ``nn.TransformerEncoderLayer`` in ``nn.TransformerEncoder``
-nhead = 2  # number of heads in ``nn.MultiheadAttention``
-dropout = 0.2
-dim_feedforward = 512
-lstm_hidden_size = 128
-lstm_n_layers = 2
 
 ##########################
 
@@ -152,6 +141,10 @@ elif name == "attention_next_56":
     model = residual_attention_network.ResidualAttentionModel_56()
 elif name == "attention_next_92":
     model = residual_attention_network.ResidualAttentionModel_92_32input_update()
+elif name == "resnext101":
+    model = torchvision.models.resnext101_32x8d(weights = None, num_classes = 4)
+    model.conv1 = nn.Conv2d(1, model.conv1.weight.shape[0], 3, 1, 1, bias = False)
+    model.maxpool = nn.MaxPool2d(kernel_size = 1, stride = 1, padding = 0)
 
 if predict:
 
@@ -249,7 +242,7 @@ else:
             cnt += 1
             if cnt >= patience:
                 break
-    save_checkpoint(model, optimizer, "/scratch/hh3043/ML_contest/checkpoint_net18_test_max_1.pth")
+    save_checkpoint(model, optimizer, "/scratch/hh3043/ML_contest/checkpoint_resnext101_test_max_1.pth")
     my_lr = scheduler.get_last_lr()[0]
     print('Finished Training', "last_learning_rate", my_lr)
 
