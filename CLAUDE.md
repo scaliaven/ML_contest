@@ -58,17 +58,14 @@ There is no test suite, linter config, or CI in this repo.
 - **`num_classes=4` everywhere.** Single-channel (grayscale spectrogram) input; the first
   conv / maxpool of torchvision backbones is patched for 1-channel input — keep that when
   swapping architectures.
-- **Dependency pins are curated.** Packages with known security advisories are bumped to
-  patched releases; the rest stay pinned for reproducibility. In `requirements.txt` the
-  CUDA libs (`nvidia-*-cu12`) and `triton` are intentionally **unpinned** (resolved via
-  `torch`) — don't re-add them. The Spleeter stack keeps the TensorFlow / Keras / protobuf
-  pins that `spleeter==2.4.0` requires; don't bump those. Automated Dependabot update PRs
-  are not used (no `.github/dependabot.yml`).
+- **Dependencies are pinned to the original contest versions** for reproducibility and are
+  intentionally not upgraded. Earlier Dependabot bumps (`certifi`, `setuptools`, `keras`)
+  were reverted back to those original pins. Don't upgrade pins, and don't re-add
+  `.github/dependabot.yml` — automated update PRs are not used.
 - Filenames follow the existing (sometimes misspelled) names, e.g. `naive_ensumble.py`,
   `voice_split.py`. Match existing style; don't rename files without being asked.
 
 ## Git
 
 - Do not commit or push unless asked.
-- Do not re-add `.github/dependabot.yml`; keep the CUDA/`triton` libs unpinned and the
-  Spleeter TensorFlow/Keras pins intact.
+- Do not re-add `.github/dependabot.yml`; keep dependency versions at their original pins.

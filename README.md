@@ -92,17 +92,14 @@ pip install -r requirements_spleeter.txt
 
 ### Dependency versions & Dependabot
 
-Packages are pinned in `requirements.txt` and `requirements_spleeter.txt`. Versions that
-carry known security advisories have been bumped to patched releases (e.g. `torch`,
-`Jinja2`, `setuptools`, `requests`, `urllib3`, `Werkzeug`, `zipp`); the rest stay pinned
-for reproducibility. In the PyTorch stack the CUDA runtime libraries (`nvidia-*-cu12`) and
-`triton` are left **unpinned** so pip resolves them from `torch`. The Spleeter stack keeps
-its TensorFlow / Keras / protobuf pins, which are constrained by `spleeter==2.4.0` and
-cannot be upgraded without replacing Spleeter.
+All packages in `requirements.txt` and `requirements_spleeter.txt` are pinned to the
+**original versions used for the contest** so results stay reproducible; they are not
+upgraded. Earlier automated **Dependabot** bumps (`certifi`, `setuptools`, `keras`) have
+been reverted back to those original pins.
 
-Automated dependency updates (**Dependabot**) are **not used** for this repository — there
-is no `.github/dependabot.yml`, so version-update pull requests are disabled. (Turning off
-Dependabot *alerts* as well is a repository *Settings → Code security* action.)
+Dependabot is **not used** for this repository — there is no `.github/dependabot.yml`, so
+version-update pull requests are disabled. (Turning off Dependabot *alerts* as well is a
+repository *Settings → Code security* action.)
 
 ## Usage
 
