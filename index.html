@@ -122,7 +122,7 @@
     </div>
     <div class="badges">
       <span class="badge">Python 3.9+</span>
-      <span class="badge">PyTorch 2.3</span>
+      <span class="badge">PyTorch 2.6</span>
       <span class="badge">torchvision · torchaudio</span>
       <span class="badge">Spleeter</span>
       <span class="badge">SLURM / HPC</span>
@@ -201,7 +201,7 @@ python data_processing/gray_scale.py   <span class="c"># .wav → .pt</span></pr
       <li><b>Augmentation</b> — mixup for the first half of training, then SpecAugment (time &amp; frequency masking) via <code>torchaudio</code>.</li>
       <li><b>Optimization</b> — SGD with momentum &amp; weight decay, cosine-annealing warm restarts, gradient-value clipping, best-val checkpointing.</li>
       <li><b>Ensembling</b> — <code>naive_ensumble.py</code> soft-votes ResNeXt-50 + DenseNet-201; <code>meta_model.py</code> stacks a meta-learner on the base outputs.</li>
-      <li><b>Frozen dependencies</b> — versions are pinned to the exact contest environment for reproducibility; automated Dependabot updates are intentionally disabled.</li>
+      <li><b>Curated dependencies</b> — security-affected packages are bumped to patched releases; the rest stay pinned for reproducibility. Automated Dependabot update PRs are not used.</li>
     </ul>
   </div>
 </section>
