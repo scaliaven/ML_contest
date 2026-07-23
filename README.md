@@ -90,6 +90,18 @@ pip install -r requirements_spleeter.txt
 > line, so some of its pinned transitive dependencies cannot be upgraded without
 > replacing Spleeter. It is kept isolated from the main environment for that reason.
 
+### Dependency versions & Dependabot
+
+All packages in `requirements.txt` and `requirements_spleeter.txt` are **intentionally
+pinned to the exact versions used for the contest** so results stay reproducible. They
+are deliberately *not* upgraded to newer releases.
+
+Automated dependency updates (**Dependabot**) have been **removed / disabled** for this
+repository — no `.github/dependabot.yml` is present, and automated update / security
+pull requests are not wanted here. Any Dependabot security alerts reported against these
+frozen versions are expected and are left as-is by design. (Fully turning off the
+alerts themselves is a repository *Settings → Code security* action.)
+
 ## Usage
 
 ### 1. Preprocess (Spleeter environment)
