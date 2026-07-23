@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ML_contest — Audio Classification Pipeline</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#ffffff; --ink:#1a1d29; --muted:#5b6273;
+    --line:#e6e8f0; --accent:#6d5efc; --accent2:#00c2a8; --code:#f2f3f9;
+    --shadow:0 1px 2px rgba(20,22,40,.05),0 8px 24px rgba(20,22,40,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0d0f17; --panel:#151824; --ink:#eef0f7; --muted:#9aa1b5;
+      --line:#242838; --accent:#8b7dff; --accent2:#2fe0c6; --code:#0f1220;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px}
+  section{padding:56px 0; border-top:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:0 0 6px; letter-spacing:-.01em}
+  .sub{color:var(--muted); margin:0 0 28px}
+
+  /* Hero */
+  .hero{
+    padding:80px 0 64px; border-top:0; position:relative; overflow:hidden;
+    background:radial-gradient(1200px 400px at 80% -10%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 60%);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-size:.8rem; font-weight:600;
+    color:var(--accent); background:color-mix(in srgb,var(--accent) 12%, transparent);
+    padding:5px 12px; border-radius:999px; letter-spacing:.02em; margin-bottom:18px;
+  }
+  .hero h1{font-size:2.7rem; line-height:1.08; letter-spacing:-.03em; margin:0 0 14px}
+  .hero h1 .grad{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p{font-size:1.12rem; color:var(--muted); max-width:620px; margin:0 0 28px}
+  .btns{display:flex; gap:12px; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:.95rem;
+    padding:11px 18px; border-radius:12px; border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); box-shadow:var(--shadow); transition:transform .12s ease;
+  }
+  .btn:hover{transform:translateY(-1px); text-decoration:none}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#fff; border:0}
+  .badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:26px}
+  .badge{
+    font-size:.78rem; font-weight:600; color:var(--muted);
+    border:1px solid var(--line); padding:4px 10px; border-radius:8px; background:var(--panel);
+  }
+
+  /* Pipeline */
+  .flow{display:flex; align-items:stretch; gap:0; flex-wrap:wrap}
+  .step{
+    flex:1 1 150px; min-width:150px; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:16px; box-shadow:var(--shadow); position:relative;
+  }
+  .step .n{font-size:.72rem; font-weight:700; color:var(--accent)}
+  .step h3{margin:6px 0 4px; font-size:1rem}
+  .step p{margin:0; font-size:.82rem; color:var(--muted)}
+  .step code{font-size:.76rem}
+  .arrow{display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:1.3rem; padding:0 6px}
+  @media (max-width:640px){ .arrow{transform:rotate(90deg); padding:6px 0} }
+
+  /* Cards grid */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; box-shadow:var(--shadow);
+  }
+  .card h3{margin:0 0 6px; font-size:1rem}
+  .card p{margin:0; font-size:.86rem; color:var(--muted)}
+  .card .tag{font-size:.72rem; font-weight:700; color:var(--accent2); text-transform:uppercase; letter-spacing:.04em}
+
+  /* Code */
+  pre{
+    background:var(--code); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; overflow-x:auto; font-size:.85rem; line-height:1.5;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  pre .c{color:var(--muted)}
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:640px){ .cols{grid-template-columns:1fr} }
+  .label{font-size:.8rem; font-weight:700; color:var(--muted); margin:0 0 8px}
+
+  .note{
+    border:1px solid var(--line); border-left:3px solid var(--accent);
+    background:color-mix(in srgb,var(--accent) 6%, var(--panel));
+    border-radius:10px; padding:14px 16px; font-size:.9rem; color:var(--ink);
+  }
+  ul.clean{margin:0; padding-left:18px} ul.clean li{margin:6px 0; color:var(--muted)}
+  ul.clean li b{color:var(--ink)}
+
+  footer{border-top:1px solid var(--line); padding:32px 0; color:var(--muted); font-size:.85rem}
+  footer .wrap{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">🎧 Audio Classification · Deep Learning</span>
+    <h1>ML_contest<br><span class="grad">Vocals → Spectrograms → Ensemble</span></h1>
+    <p>An end-to-end pipeline for a 4-class audio classification contest: source-separate
+       each clip, turn it into a mel-spectrogram, and classify it with an ensemble of
+       CNN and attention networks.</p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/scaliaven/ML_contest">View on GitHub →</a>
+      <a class="btn" href="https://github.com/scaliaven/ML_contest/blob/main/README.md">Read the docs</a>
+    </div>
+    <div class="badges">
+      <span class="badge">Python 3.9+</span>
+      <span class="badge">PyTorch 2.3</span>
+      <span class="badge">torchvision · torchaudio</span>
+      <span class="badge">Spleeter</span>
+      <span class="badge">SLURM / HPC</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The pipeline</h2>
+    <p class="sub">From raw <code>.mp3</code> clips to a submission <code>.csv</code>, in five stages.</p>
+    <div class="flow">
+      <div class="step"><div class="n">01 · SEPARATE</div><h3>Vocal split</h3><p>Spleeter <code>2stems</code> isolates the vocals from each clip.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">02 · FEATURES</div><h3>Mel-spectrogram</h3><p>Each vocal track becomes a mel-spectrogram tensor (<code>.pt</code>).</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">03 · DATASET</div><h3>Load &amp; balance</h3><p>Crop, normalize, and optionally oversample the minority class.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">04 · TRAIN</div><h3>CNN / attention</h3><p>Mixup + SpecAugment, SGD with cosine warm restarts.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">05 · PREDICT</div><h3>Ensemble</h3><p>Soft-voting &amp; a stacked meta-model produce the final CSV.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Model zoo</h2>
+    <p class="sub">Swap architectures with a single <code>name</code> flag in <code>main.py</code>.</p>
+    <div class="grid">
+      <div class="card"><span class="tag">ConvNet</span><h3>ResNeXt 50 / 101</h3><p>Single-channel input, patched stem, 4-class head.</p></div>
+      <div class="card"><span class="tag">ConvNet</span><h3>DenseNet-201</h3><p>Dense connectivity backbone for spectrograms.</p></div>
+      <div class="card"><span class="tag">Regularized</span><h3>Shake-ResNet / ResNeXt</h3><p>Shake-Shake regularization variants.</p></div>
+      <div class="card"><span class="tag">Attention</span><h3>Residual Attention Net</h3><p>56 / 92-layer attention architectures.</p></div>
+      <div class="card"><span class="tag">Baseline</span><h3>ResNet-18</h3><p>Lightweight convolutional baseline.</p></div>
+      <div class="card"><span class="tag">Sequence</span><h3>LSTM / Transformer</h3><p>Recurrent &amp; attention sequence baselines.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <p class="sub">Two isolated environments — Spleeter pins an older TensorFlow that the PyTorch stack can't share.</p>
+    <div class="cols">
+      <div>
+        <p class="label">1 · Training / inference (PyTorch)</p>
+<pre><span class="c"># Python 3.9+</span>
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python main.py            <span class="c"># train / infer</span>
+python naive_ensumble.py  <span class="c"># ensemble → CSV</span></pre>
+      </div>
+      <div>
+        <p class="label">2 · Preprocessing (Spleeter)</p>
+<pre>python -m venv .venv-spleeter
+source .venv-spleeter/bin/activate
+pip install -r requirements_spleeter.txt
+
+python voice_split.py                  <span class="c"># separate vocals</span>
+python data_processing/gray_scale.py   <span class="c"># .wav → .pt</span></pre>
+      </div>
+    </div>
+    <p style="margin-top:16px" class="note">⚠️ Scripts use absolute paths hard-coded to an HPC scratch directory
+       (<code>/scratch/hh3043/ML_contest/…</code>). Update the dataset, checkpoint, and output
+       paths before running elsewhere.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Under the hood</h2>
+    <ul class="clean">
+      <li><b>Augmentation</b> — mixup for the first half of training, then SpecAugment (time &amp; frequency masking) via <code>torchaudio</code>.</li>
+      <li><b>Optimization</b> — SGD with momentum &amp; weight decay, cosine-annealing warm restarts, gradient-value clipping, best-val checkpointing.</li>
+      <li><b>Ensembling</b> — <code>naive_ensumble.py</code> soft-votes ResNeXt-50 + DenseNet-201; <code>meta_model.py</code> stacks a meta-learner on the base outputs.</li>
+      <li><b>Frozen dependencies</b> — versions are pinned to the exact contest environment for reproducibility; automated Dependabot updates are intentionally disabled.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>ML_contest — audio classification pipeline.</span>
+    <span><a href="https://github.com/scaliaven/ML_contest">github.com/scaliaven/ML_contest</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
