@@ -148,6 +148,12 @@ python meta_model.py        # stacked meta-model
 (dataset directories, checkpoint paths, and the output `my_submission.csv` location) to
 match your environment.
 
+## Contributing / working in this repo
+
+Contributor and agent guidance — architecture notes, conventions, and gotchas
+(hard-coded paths, the edit-in-place config style, and the frozen-dependency /
+no-Dependabot policy) — lives in [`CLAUDE.md`](CLAUDE.md).
+
 ## License
 
 See [`LICENSE`](LICENSE).
