@@ -4,10 +4,13 @@ Guidance for Claude Code (and other agents) working in this repository.
 
 ## What this project is
 
-A deep-learning pipeline for a **4-class audio classification** contest. Raw audio
-is separated into vocals (Spleeter), converted to mel-spectrogram tensors, and
-classified with CNN / attention networks, then combined via ensembling. See
-[`README.md`](README.md) for the full pipeline diagram and per-file table.
+A deep-learning pipeline for a **4-class music audio classification** Kaggle contest. Each
+track's **vocal** stem (Spleeter) is turned into a `[1, 128, 128]` grayscale mel-spectrogram
+(Librosa) and classified with CNN / attention networks, then combined via ensembling. The
+final submission (ResNeXt-50 + DenseNet-201 soft-voting ensemble) scored **83.04%**. See
+[`README.md`](README.md) for the pipeline diagram and per-file table, and
+[`docs/ML_project.pdf`](docs/ML_project.pdf) for the full write-up (methodology, experiments,
+results).
 
 ## Architecture at a glance
 
@@ -55,9 +58,11 @@ There is no test suite, linter config, or CI in this repo.
   new ones where practical.
 - **Config is edit-in-place**, not CLI args. Runtime options live in the flag block at
   the top of `main.py` / `meta_model.py`. Preserve that style unless asked to refactor.
-- **`num_classes=4` everywhere.** Single-channel (grayscale spectrogram) input; the first
-  conv / maxpool of torchvision backbones is patched for 1-channel input — keep that when
-  swapping architectures.
+- **`num_classes=4` everywhere.** Single-channel (grayscale spectrogram) input. The
+  torchvision stems are deliberately patched for the small `128×128` input: the first conv
+  becomes `3×3` stride-1 padding-1 and the following max-pool is skipped (kernel 1) — this
+  avoids over-downsampling and is intentional (see the report), so keep it when swapping
+  architectures.
 - **Dependencies are pinned to the original contest versions** for reproducibility and are
   intentionally not upgraded. Earlier Dependabot bumps (`certifi`, `setuptools`, `keras`)
   were reverted back to those original pins. Don't upgrade pins, and don't re-add

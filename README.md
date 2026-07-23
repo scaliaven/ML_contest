@@ -1,9 +1,13 @@
-# ML_contest — Audio Classification Pipeline
+# ML_contest — Music Audio Classification Pipeline
 
-A deep-learning pipeline for a **4-class audio classification** contest. Raw audio
-clips are separated into vocals, converted into mel-spectrograms, and classified
-with an ensemble of convolutional / attention networks. The pipeline covers the
-full path from raw `.mp3` files to a submission `.csv`.
+A deep-learning pipeline for a **4-class music audio classification** Kaggle contest.
+Each track is source-separated into its vocal part, converted into a mel-spectrogram,
+and treated as a single-channel (grayscale) image for classification by an ensemble of
+convolutional / attention networks. The pipeline covers the full path from raw `.mp3`
+files to a submission `.csv`.
+
+> **Result:** the final submission — a soft-voting ensemble of **ResNeXt-50 + DenseNet-201** —
+> reached **83.04%** test accuracy. Full write-up: [`docs/ML_project.pdf`](docs/ML_project.pdf).
 
 ## Pipeline overview
 
@@ -31,6 +35,13 @@ checkpoint .pth
 my_submission.csv
 ```
 
+## Data representation
+
+Spleeter (`2stems`) splits each track into vocal / instrumental parts; the **vocal** stem is
+kept. Librosa turns it into a mel-spectrogram of shape `[128, 130]` (frequency × time), which
+is sliced to `[128, 128]` and reshaped to `[1, 128, 128]` so it can be fed to image models as a
+single-channel image.
+
 ## Repository layout
 
 | Path | Purpose |
@@ -50,6 +61,7 @@ my_submission.csv
 | `run_main.sh` | SLURM batch script (configured for an NYU HPC H100 partition). |
 | `requirements.txt` | PyTorch training/inference environment. |
 | `requirements_spleeter.txt` | Separate Spleeter/TensorFlow environment for preprocessing (see note below). |
+| `docs/ML_project.pdf` | The project report (methodology, experiments, and results). |
 
 ## Models
 
@@ -62,10 +74,16 @@ my_submission.csv
 - `attention_resnet`, `attention_next_56`, `attention_next_92` — Residual Attention Networks
 - `lstm` — recurrent baseline (`model_zoo/Transformer.py`)
 
-**Training details:** cross-entropy loss, SGD with momentum + weight decay, cosine-annealing
-warm-restart schedule, gradient-value clipping, and checkpointing on best validation accuracy.
-Regularization uses **mixup** (first half of training) and **SpecAugment** (time/frequency
-masking via `torchaudio`).
+**Architecture modifications.** The inputs are `[1, 128, 128]` grayscale spectrograms, not
+`224×224` photos, so the aggressive early downsampling of the standard torchvision stems is
+removed: the first convolution is changed to a `3×3` filter with stride 1 / padding 1, and the
+following max-pool is skipped (kernel 1, stride 1, padding 0). All heads use `num_classes=4`.
+
+**Training details.** Cross-entropy loss, SGD with momentum + weight decay, a cosine-annealing
+(warm-restart) learning-rate schedule, gradient-value clipping, and checkpointing on best
+validation accuracy. Regularization uses **Mixup** for the first half of training (then plain
+cross-entropy — Mixup over too many epochs hurt generalization on deep nets like DenseNet-201)
+and **SpecAugment** (per-batch time/frequency masking via `torchaudio`).
 
 ## Setup
 
@@ -146,6 +164,30 @@ python meta_model.py        # stacked meta-model
 (e.g. `/scratch/hh3043/ML_contest/...`). Before running elsewhere, update these paths
 (dataset directories, checkpoint paths, and the output `my_submission.csv` location) to
 match your environment.
+
+## Experiments & findings
+
+From the project report ([`docs/ML_project.pdf`](docs/ML_project.pdf)):
+
+- **Grayscale beats RGB** — using single-channel spectrogram images yielded higher accuracy
+  than RGB renderings.
+- **Mixup + SpecAugment ≈ +2%** accuracy over no augmentation.
+- **Unweighted ensembles help; weighted ones overfit** — summing model output probabilities
+  and taking the argmax improved results, while a learned/reweighted meta-model overfit and
+  slightly reduced test accuracy. The best combination was **DenseNet-201 + ResNeXt-50**.
+- **Not finished / future work** — GAN- and Autoencoder-based data augmentation were started
+  but not completed; K-fold cross-validation would fit the data better, since tracks are split
+  into train/test first and then sliced into 3-second snippets (so train/val snippets come from
+  the same songs while test songs are unseen).
+
+## Report & compute
+
+The full methodology, experiments, and results are documented in
+[`docs/ML_project.pdf`](docs/ML_project.pdf) (author: Hongjia Huang, NYU).
+
+All models train on an RTX 8000; deeper models (DenseNet-201, ResNeXt-50) benefit from
+A100 / H100 / A800-class GPUs. Experiments were run on the NYU Greene and NYU Shanghai HPC
+clusters (see `run_main.sh` for the SLURM configuration).
 
 ## Contributing / working in this repo
 
