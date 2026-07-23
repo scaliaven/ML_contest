@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ML_contest — Audio Classification Pipeline</title>
+<title>ML_contest — Music Audio Classification Pipeline</title>
 <style>
   :root{
     --bg:#f7f8fb; --panel:#ffffff; --ink:#1a1d29; --muted:#5b6273;
@@ -55,6 +55,17 @@
   }
   .btn:hover{transform:translateY(-1px); text-decoration:none}
   .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#fff; border:0}
+  .stat{
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin:0 0 28px;
+    padding:16px 20px; border:1px solid var(--line); border-radius:14px;
+    background:var(--panel); box-shadow:var(--shadow); max-width:520px;
+  }
+  .stat-num{
+    font-size:2rem; font-weight:800; letter-spacing:-.02em;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .stat-label{font-size:.9rem; color:var(--muted)}
   .badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:26px}
   .badge{
     font-size:.78rem; font-weight:600; color:var(--muted);
@@ -111,14 +122,19 @@
 
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">🎧 Audio Classification · Deep Learning</span>
+    <span class="eyebrow">🎧 Music Classification · Deep Learning</span>
     <h1>ML_contest<br><span class="grad">Vocals → Spectrograms → Ensemble</span></h1>
-    <p>An end-to-end pipeline for a 4-class audio classification contest: source-separate
-       each clip, turn it into a mel-spectrogram, and classify it with an ensemble of
-       CNN and attention networks.</p>
+    <p>An end-to-end pipeline for a 4-class music audio classification Kaggle contest:
+       source-separate each track's vocals, turn them into a mel-spectrogram, and classify
+       with an ensemble of CNN and attention networks.</p>
+    <div class="stat">
+      <span class="stat-num">83.04%</span>
+      <span class="stat-label">test accuracy · ResNeXt-50 + DenseNet-201 ensemble</span>
+    </div>
     <div class="btns">
       <a class="btn primary" href="https://github.com/scaliaven/ML_contest">View on GitHub →</a>
       <a class="btn" href="https://github.com/scaliaven/ML_contest/blob/main/README.md">Read the docs</a>
+      <a class="btn" href="docs/ML_project.pdf">📄 Project report</a>
     </div>
     <div class="badges">
       <span class="badge">Python 3.9+</span>
@@ -198,18 +214,32 @@ python data_processing/gray_scale.py   <span class="c"># .wav → .pt</span></pr
   <div class="wrap">
     <h2>Under the hood</h2>
     <ul class="clean">
-      <li><b>Augmentation</b> — mixup for the first half of training, then SpecAugment (time &amp; frequency masking) via <code>torchaudio</code>.</li>
-      <li><b>Optimization</b> — SGD with momentum &amp; weight decay, cosine-annealing warm restarts, gradient-value clipping, best-val checkpointing.</li>
+      <li><b>Input</b> — the vocal stem becomes a <code>[128, 130]</code> mel-spectrogram, sliced to <code>[128, 128]</code> and reshaped to <code>[1, 128, 128]</code> — a single-channel image.</li>
+      <li><b>Adapted stems</b> — for <code>128×128</code> input the first conv is changed to <code>3×3</code> stride-1 and the early max-pool is skipped, avoiding over-downsampling.</li>
+      <li><b>Augmentation</b> — Mixup for the first half of training (then plain cross-entropy), plus SpecAugment (time &amp; frequency masking) via <code>torchaudio</code>.</li>
+      <li><b>Optimization</b> — SGD with momentum &amp; weight decay, cosine-annealing (warm restarts), gradient-value clipping, best-val checkpointing.</li>
       <li><b>Ensembling</b> — <code>naive_ensumble.py</code> soft-votes ResNeXt-50 + DenseNet-201; <code>meta_model.py</code> stacks a meta-learner on the base outputs.</li>
-      <li><b>Pinned dependencies</b> — versions are pinned to the original contest environment for reproducibility. Automated Dependabot update PRs are not used.</li>
     </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What worked</h2>
+    <p class="sub">Key findings from the <a href="docs/ML_project.pdf">project report</a>.</p>
+    <div class="grid">
+      <div class="card"><span class="tag">+ Signal</span><h3>Grayscale &gt; RGB</h3><p>Single-channel spectrogram images outperformed RGB renderings.</p></div>
+      <div class="card"><span class="tag">≈ +2%</span><h3>Mixup + SpecAugment</h3><p>Combined augmentation added roughly two points of accuracy.</p></div>
+      <div class="card"><span class="tag">Winner</span><h3>Unweighted ensemble</h3><p>Summing probabilities beat a learned meta-model, which overfit.</p></div>
+      <div class="card"><span class="tag">Future</span><h3>K-fold &amp; generative</h3><p>K-fold CV and GAN/autoencoder augmentation are promising next steps.</p></div>
+    </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <span>ML_contest — audio classification pipeline.</span>
-    <span><a href="https://github.com/scaliaven/ML_contest">github.com/scaliaven/ML_contest</a></span>
+    <span>ML_contest — music audio classification pipeline · 83.04% test accuracy.</span>
+    <span><a href="docs/ML_project.pdf">Report</a> · <a href="https://github.com/scaliaven/ML_contest">github.com/scaliaven/ML_contest</a></span>
   </div>
 </footer>
 
