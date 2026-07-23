@@ -35,6 +35,13 @@ checkpoint .pth
 my_submission.csv
 ```
 
+## Data representation
+
+Spleeter (`2stems`) splits each track into vocal / instrumental parts; the **vocal** stem is
+kept. Librosa turns it into a mel-spectrogram of shape `[128, 130]` (frequency × time), which
+is sliced to `[128, 128]` and reshaped to `[1, 128, 128]` so it can be fed to image models as a
+single-channel image.
+
 ## Repository layout
 
 | Path | Purpose |
@@ -77,28 +84,6 @@ following max-pool is skipped (kernel 1, stride 1, padding 0). All heads use `nu
 validation accuracy. Regularization uses **Mixup** for the first half of training (then plain
 cross-entropy — Mixup over too many epochs hurt generalization on deep nets like DenseNet-201)
 and **SpecAugment** (per-batch time/frequency masking via `torchaudio`).
-
-## Data representation
-
-Spleeter (`2stems`) splits each track into vocal / instrumental parts; the **vocal** stem is
-kept. Librosa turns it into a mel-spectrogram of shape `[128, 130]` (frequency × time), which
-is sliced to `[128, 128]` and reshaped to `[1, 128, 128]` so it can be fed to image models as a
-single-channel image.
-
-## Experiments & findings
-
-From the project report ([`docs/ML_project.pdf`](docs/ML_project.pdf)):
-
-- **Grayscale beats RGB** — using single-channel spectrogram images yielded higher accuracy
-  than RGB renderings.
-- **Mixup + SpecAugment ≈ +2%** accuracy over no augmentation.
-- **Unweighted ensembles help; weighted ones overfit** — summing model output probabilities
-  and taking the argmax improved results, while a learned/reweighted meta-model overfit and
-  slightly reduced test accuracy. The best combination was **DenseNet-201 + ResNeXt-50**.
-- **Not finished / future work** — GAN- and Autoencoder-based data augmentation were started
-  but not completed; K-fold cross-validation would fit the data better, since tracks are split
-  into train/test first and then sliced into 3-second snippets (so train/val snippets come from
-  the same songs while test songs are unseen).
 
 ## Setup
 
@@ -179,6 +164,21 @@ python meta_model.py        # stacked meta-model
 (e.g. `/scratch/hh3043/ML_contest/...`). Before running elsewhere, update these paths
 (dataset directories, checkpoint paths, and the output `my_submission.csv` location) to
 match your environment.
+
+## Experiments & findings
+
+From the project report ([`docs/ML_project.pdf`](docs/ML_project.pdf)):
+
+- **Grayscale beats RGB** — using single-channel spectrogram images yielded higher accuracy
+  than RGB renderings.
+- **Mixup + SpecAugment ≈ +2%** accuracy over no augmentation.
+- **Unweighted ensembles help; weighted ones overfit** — summing model output probabilities
+  and taking the argmax improved results, while a learned/reweighted meta-model overfit and
+  slightly reduced test accuracy. The best combination was **DenseNet-201 + ResNeXt-50**.
+- **Not finished / future work** — GAN- and Autoencoder-based data augmentation were started
+  but not completed; K-fold cross-validation would fit the data better, since tracks are split
+  into train/test first and then sliced into 3-second snippets (so train/val snippets come from
+  the same songs while test songs are unseen).
 
 ## Report & compute
 
